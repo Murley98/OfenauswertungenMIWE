@@ -189,11 +189,16 @@ def smart_sort_key(row_name):
 html_parts = []
 all_names = sorted(df["row_name"].unique(), key=smart_sort_key)
 
-# Debug: Zeige die Reihenfolge
-print(f"\n📋 Geräte-Reihenfolge im Dashboard ({len(all_names)} Geräte):")
-for i, name in enumerate(all_names, 1):
-    print(f"  {i}. {name}")
-print()
+# Berechne einheitlichen Zeitbereich: 22:00 Uhr bis 22:00 Uhr (nächster Tag)
+from datetime import timedelta
+min_date = df["timestamp"].min().date()
+max_date = df["timestamp"].max().date()
+
+# Start: 22:00 Uhr am Vortag des ersten Datums
+x_start = datetime.combine(min_date - timedelta(days=1), datetime.strptime("22:00", "%H:%M").time())
+
+# Ende: 22:00 Uhr am Tag nach dem letzten Datum
+x_end = datetime.combine(max_date + timedelta(days=1), datetime.strptime("22:00", "%H:%M").time())
 
 for name in all_names:
     subset = df[df["row_name"] == name].copy()
@@ -255,6 +260,7 @@ for name in all_names:
         title=f"{name}",
         xaxis_title="Zeit",
         yaxis_title="Temperatur °C",
+        xaxis=dict(range=[x_start, x_end]),  # Einheitlicher Zeitbereich für alle Diagramme
         height=350,
         margin=dict(l=80, r=30, t=50, b=40),
         template="plotly_white",
