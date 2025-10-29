@@ -141,8 +141,41 @@ for name, g in df.groupby("row_name"):
 # ---------------------------------------------------------------
 # 5. Diagramme pro Ofen/Herd erstellen
 # ---------------------------------------------------------------
+# Bessere Sortierung: Nach Gerätetyp und ID, dann Herd
+def smart_sort_key(row_name):
+    """Sortiert Geräte logisch: zuerst nach Typ, dann nach ID-Nummer, dann nach Herd"""
+    # Parse row_name: z.B. "MIWE gateway (2/1)" oder "MIWE ideal TC (1/1) - Herd 1"
+    parts = row_name.split(" - ")
+    base = parts[0]  # z.B. "MIWE ideal TC (1/1)"
+    herd = parts[1] if len(parts) > 1 else ""
+    
+    # Extrahiere Gerätetyp und ID
+    match = re.match(r"^(.*?)\s*\(([^)]+)\)\s*$", base)
+    if match:
+        device_type = match.group(1).strip().lower()
+        device_id = match.group(2).strip()
+    else:
+        device_type = base.lower()
+        device_id = ""
+    
+    # Filtere ungültige/leere Geräte ans Ende
+    if not device_type or device_type == "0" or device_type == "nan" or not device_id:
+        return ("zzz_invalid", [9999], 9999)
+    
+    # Extrahiere Zahlen aus device_id für numerische Sortierung (z.B. "2/1" -> [2, 1])
+    id_numbers = [int(x) if x.isdigit() else 0 for x in re.findall(r'\d+', device_id)]
+    if not id_numbers:
+        id_numbers = [9999]  # Geräte ohne Nummer ans Ende
+    
+    # Extrahiere Herd-Nummer falls vorhanden
+    herd_match = re.search(r"Herd\s*(\d+)", herd)
+    herd_num = int(herd_match.group(1)) if herd_match else 0
+    
+    # Sortierung: (Gerätetyp, ID-Zahlen, Herd-Nummer)
+    return (device_type, id_numbers, herd_num)
+
 html_parts = []
-all_names = sorted(df["row_name"].unique())
+all_names = sorted(df["row_name"].unique(), key=smart_sort_key)
 
 for name in all_names:
     subset = df[df["row_name"] == name].copy()
