@@ -94,19 +94,38 @@ def make_row_name(row):
 df["row_name"] = df.apply(make_row_name, axis=1)
 
 # ---------------------------------------------------------------
-# 4. Programmphasen bestimmen
+# 4. Programmphasen bestimmen + Programmnummern extrahieren
 # ---------------------------------------------------------------
 df["is_loaded"] = df["Meldung"].str.contains("Arbeitsprog", case=False, na=False)
 df["is_started"] = df["Meldung"].str.contains("Programm gestartet", case=False, na=False)
 df["is_ended"] = df["Meldung"].str.contains("Programmende|Programm beendet|Programm gestoppt", case=False, na=False)
 
+# Funktion: Programmnummer aus Meldung extrahieren (z.B. "P1", "Programm 123" -> "P123")
+def extract_program_number(msg):
+    msg_str = str(msg)
+    # Suche nach "P" gefolgt von Ziffern
+    m = re.search(r"P\s*(\d+)", msg_str, re.IGNORECASE)
+    if m:
+        return f"P{m.group(1)}"
+    # Alternativ: "Programm 123" oder "Prog 123"
+    m = re.search(r"(?:Programm|Prog)\s+(\d+)", msg_str, re.IGNORECASE)
+    if m:
+        return f"P{m.group(1)}"
+    return None
+
+df["prog_num"] = df["Meldung"].apply(extract_program_number)
+
 preheats = []
-runs = []
+runs = []  # jetzt: (name, start, end, prog_num)
 for name, g in df.groupby("row_name"):
     g = g.sort_values("timestamp")
-    t_load = t_start = None
+    t_load = t_start = prog_num = None
     for _, r in g.iterrows():
         t = r["timestamp"]
+        # Programmnummer merken, wenn vorhanden
+        if r["prog_num"]:
+            prog_num = r["prog_num"]
+        
         if r["is_loaded"]:
             t_load = t
         if r["is_started"]:
@@ -115,8 +134,9 @@ for name, g in df.groupby("row_name"):
                 t_load = None
             t_start = t
         if r["is_ended"] and t_start:
-            runs.append((name, t_start, t))
+            runs.append((name, t_start, t, prog_num))
             t_start = None
+            prog_num = None  # Reset für nächsten Run
 
 # ---------------------------------------------------------------
 # 5. Diagramme pro Ofen/Herd erstellen
@@ -147,15 +167,38 @@ for name in all_names:
             mode="lines", name="Soll °C", line=dict(color="blue", dash="dot", width=1.5)
         ))
 
-    # Vorheizen/Laufzeit-Balken
+    # Vorheizen/Laufzeit-Balken + Programmnummer-Annotations
     for n, s, e in preheats:
         if n == name:
             fig.add_shape(type="rect", x0=s, x1=e, y0=0, y1=1,
                           xref="x", yref="paper", fillcolor="rgba(255,0,0,0.3)", line=dict(width=0))
-    for n, s, e in runs:
+    
+    for item in runs:
+        n = item[0]
+        s = item[1]
+        e = item[2]
+        prog_num = item[3] if len(item) > 3 else None
+        
         if n == name:
+            # Grünes Rechteck für Programm-Run
             fig.add_shape(type="rect", x0=s, x1=e, y0=0, y1=1,
                           xref="x", yref="paper", fillcolor="rgba(0,200,0,0.3)", line=dict(width=0))
+            
+            # Programmnummer als Text-Annotation in der Mitte des Rechtecks
+            if prog_num:
+                mid_time = s + (e - s) / 2
+                fig.add_annotation(
+                    x=mid_time,
+                    y=0.95,
+                    yref="paper",
+                    text=f"<b>{prog_num}</b>",
+                    showarrow=False,
+                    font=dict(size=14, color="darkgreen"),
+                    bgcolor="rgba(255,255,255,0.7)",
+                    bordercolor="darkgreen",
+                    borderwidth=1,
+                    borderpad=3
+                )
 
     fig.update_layout(
         title=f"{name}",
