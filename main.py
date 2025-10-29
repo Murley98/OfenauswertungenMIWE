@@ -80,6 +80,18 @@ def parse_device(dev):
 
 df[["device_type", "device_id"]] = df["Gerät"].apply(lambda x: pd.Series(parse_device(x)))
 
+# Bereinigung: Geräte ohne Namen aber mit ID automatisch als MIWE gateway setzen
+def clean_device_type(row):
+    device_type = str(row.device_type).strip()
+    device_id = str(row.device_id).strip()
+    
+    # Wenn kein Name aber ID im Format "X/Y" vorhanden ist -> MIWE gateway
+    if (not device_type or device_type == "0" or device_type == "nan") and device_id and "/" in device_id:
+        return "MIWE gateway"
+    return device_type
+
+df["device_type"] = df.apply(clean_device_type, axis=1)
+
 def extract_herd(msg):
     m = re.search(r"Herd\s*([0-9]+)", str(msg))
     return f"Herd {m.group(1)}" if m else None
