@@ -189,6 +189,12 @@ def smart_sort_key(row_name):
 html_parts = []
 all_names = sorted(df["row_name"].unique(), key=smart_sort_key)
 
+# Debug: Zeige die Reihenfolge
+print(f"\n📋 Geräte-Reihenfolge im Dashboard ({len(all_names)} Geräte):")
+for i, name in enumerate(all_names, 1):
+    print(f"  {i}. {name}")
+print()
+
 for name in all_names:
     subset = df[df["row_name"] == name].copy()
     if subset.empty:
