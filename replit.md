@@ -77,17 +77,6 @@ Preferred communication style: Simple, everyday language.
 - Displayed as text annotations (centered, white background, green border) inside green runtime rectangles
 - Implementation: Plotly `add_annotation()` with paper-relative y-positioning
 
-**Device Sorting and Naming**:
-- Implemented smart sorting: devices grouped by type, then sorted numerically by ID
-- Auto-correction: Devices without name but with "X/Y" format ID are automatically labeled as "MIWE gateway"
-- Sort order: MIWE eco:nova TC → MIWE gateway (1/1, 2/1, ...) → MIWE ideal TC (by ID and Herd)
-
-**Unified Timeline**:
-- All charts now display the same time range from 22:00 to 22:00 (next day)
-- Makes it easy to compare overlaps between different ovens vertically
-- Time range is automatically calculated from data min/max dates
-- Users can zoom in manually as needed
-
 ### File Structure
 
 ```
