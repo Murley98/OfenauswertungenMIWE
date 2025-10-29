@@ -10,6 +10,7 @@ This is a Python-based oven monitoring dashboard that processes CSV data from in
 - CSV data parsing with automatic encoding/delimiter detection
 - Time-series data extraction and transformation
 - Multi-device Gantt chart generation with temperature overlays
+- Program number extraction and display (P1, P2, etc.)
 - Static HTML dashboard output
 
 ## User Preferences
@@ -47,6 +48,7 @@ Preferred communication style: Simple, everyday language.
 - Gantt chart implementation using horizontal bar traces
 - Temperature data overlaid as line traces on secondary y-axis
 - Color coding: Red for preheat phases, Green for runtime phases
+- Program numbers (P1, P2, etc.) displayed as annotations in runtime phases
 - Each device gets its own subplot/chart
 
 **Output Format**:
@@ -62,9 +64,18 @@ Preferred communication style: Simple, everyday language.
 
 1. **Load CSV** → Detect encoding and delimiter
 2. **Parse & Clean** → Identify columns, rename for standardization
-3. **Transform** → Extract timestamps, device names, status messages, temperature values
-4. **Generate Charts** → Create Plotly figures for each device
+3. **Transform** → Extract timestamps, device names, status messages, temperature values, program numbers
+4. **Generate Charts** → Create Plotly figures for each device with program number annotations
 5. **Export HTML** → Write standalone HTML file with embedded charts
+
+### Recent Changes (October 29, 2025)
+
+**Program Number Display Feature**:
+- Added `extract_program_number()` function to parse program numbers from the "Meldung" column
+- Supports patterns: "P1", "P2", "Programm 123", "Prog 123"
+- Program numbers are associated with their respective program runs
+- Displayed as text annotations (centered, white background, green border) inside green runtime rectangles
+- Implementation: Plotly `add_annotation()` with paper-relative y-positioning
 
 ### File Structure
 
